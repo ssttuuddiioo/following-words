@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poltawski+Nowy:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+    <title>Vite App</title>
+  </head>
+  <body>
+    <div id="app">
+      <div class="intro_screen">
+        <div class="intro_text_container">
+          <div class="cursor_container">
+            <span class="blinking_cursor">|</span>
+          </div>
+          <p class="intro_text">
+            <span class="typed_text"></span><span class="typing_cursor">|</span>
+          </p>
+        </div>
+        <div class="title_container">
+          <h1 class="following">following</h1>
+          <div class="dotted_line_container">
+            <!-- SVG will be inserted here -->
+          </div>
+          <h1 class="words">words</h1>
+        </div>
+        <button class="enter_button">Enter</button>
+      </div>
+      <div class="options_screen">
+        <div class="sentence"></div>
+        <div class="options_container">
+          <div class="option">
+            <input type="radio" name="option" value="And" id="option1" data-keycode="1" />
+            <label for="option1">And</label>
+            <label for="option1">1</label>
+          </div>
+          <div class="option">
+            <input type="radio" name="option" value="Or" id="option2" data-keycode="2"/>
+            <label for="option2">Or</label>
+            <label for="option2">2</label>
+          </div>
+          <div class="option">
+            <input type="radio" name="option" value="That" id="option3" data-keycode="3"/>
+            <label for="option3">That</label>
+            <label for="option3">3</label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
