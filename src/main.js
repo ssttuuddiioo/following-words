@@ -313,10 +313,25 @@ function startTypewriterEffect() {
     }, 10000 / INTRO_TEXT_CONTENT.length); // 15 seconds total divided by character count (5x slower)
 }
 
-// Listen for any key press to start typing
+// Listen for any key press, click, or touch to start typing
 document.addEventListener('keydown', (e) => {
     if (!typingStarted) {
         startTypewriterEffect();
+    }
+});
+
+// Listen for click/tap to start typing (mobile support)
+document.addEventListener('click', (e) => {
+    if (!typingStarted) {
+        startTypewriterEffect();
+    }
+});
+
+// Listen for touch events to start typing (mobile support)
+document.addEventListener('touchstart', (e) => {
+    if (!typingStarted) {
+        startTypewriterEffect();
+        e.preventDefault(); // Prevent click event from also firing
     }
 });
 
