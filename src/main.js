@@ -1,6 +1,8 @@
 import './style.css';
 import './main.css';
-import {gsap} from "gsap";
+import { gsap } from "gsap";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
+gsap.registerPlugin(ScrollToPlugin);
 
 const timeline = gsap.timeline({
     defaults: {duration: 0.5, ease: 'power1.inOut'}
@@ -31,6 +33,176 @@ let currentNode = null;
 let optionIndex = 0;
 let availableChains = ['what', 'the', 'a', 'i', 'in', 'o', 'oh', 'there', 'when', '1'];
 let currentSentence = [];
+
+// SVG Stroke Animation System  
+class SVGStrokeSystem {
+    constructor() {
+        this.container = document.getElementById('svg-background');
+        this.currentSVG = null;
+        this.svgNumbers = ['1', '2', '3', '4', '5', '6'];
+        this.animatedPaths = [];
+        
+        this.initialize();
+    }
+    
+    async initialize() {
+        // Select random SVG
+        const randomNumber = this.svgNumbers[Math.floor(Math.random() * this.svgNumbers.length)];
+        await this.loadSVG(randomNumber);
+    }
+    
+    async loadSVG(number) {
+        try {
+            console.log(`Loading SVG: ${number}.svg`);
+            const response = await fetch(`/${number}.svg`);
+            if (!response.ok) {
+                throw new Error(`Failed to load ${number}.svg`);
+            }
+            const svgText = await response.text();
+            this.container.innerHTML = svgText;
+            
+            // Get the loaded SVG and prepare it for animation
+            this.currentSVG = this.container.querySelector('svg');
+            if (this.currentSVG) {
+                this.prepareSVGForAnimation();
+            }
+        } catch (error) {
+            console.error('Error loading SVG:', error);
+            this.createFallbackSVG();
+        }
+    }
+    
+    prepareSVGForAnimation() {
+        // Find all path elements in the SVG
+        const paths = this.currentSVG.querySelectorAll('path');
+        
+        paths.forEach((path, index) => {
+            // Get path length for stroke animation
+            const pathLength = path.getTotalLength();
+            
+            // Set initial state - path not drawn
+            path.style.strokeDasharray = pathLength;
+            path.style.strokeDashoffset = pathLength;
+            path.style.stroke = 'white';
+            path.style.strokeWidth = '3';
+            path.style.strokeLinecap = 'round';
+            path.style.strokeLinejoin = 'round';
+            path.style.fill = 'none';
+            path.style.filter = 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.3))';
+            path.style.opacity = '0.8';
+            
+            this.animatedPaths.push({
+                element: path,
+                length: pathLength,
+                progress: 0, // Track animation progress (0-100%)
+                isErasing: false
+            });
+        });
+        
+        // Track overall progress
+        this.totalProgress = 0;
+        this.isErasing = false;
+        
+        console.log(`Prepared ${this.animatedPaths.length} paths for animation`);
+    }
+
+    
+    animateOnChoice(choiceIndex) {
+        if (this.animatedPaths.length === 0) return;
+        
+        // Advance progress by 15% per choice
+        if (!this.isErasing) {
+            this.totalProgress = Math.min(this.totalProgress + 15, 100);
+            console.log(`SVG progress: ${this.totalProgress}%`);
+            
+            // If we've reached 100%, start erasing after a brief pause
+            if (this.totalProgress >= 100) {
+                setTimeout(() => {
+                    this.startErasing();
+                }, 800); // Brief pause before erasing
+            }
+        } else {
+            // If erasing, advance erase progress by 15%
+            this.totalProgress = Math.max(this.totalProgress - 15, 0);
+            console.log(`SVG erase progress: ${100 - this.totalProgress}%`);
+            
+            // If fully erased, reset and start drawing again
+            if (this.totalProgress <= 0) {
+                this.isErasing = false;
+                this.totalProgress = 15; // Start with first increment
+            }
+        }
+        
+        this.updatePathProgress();
+    }
+    
+    updatePathProgress() {
+        this.animatedPaths.forEach((pathData, index) => {
+            const pathLength = pathData.length;
+            
+            if (!this.isErasing) {
+                // Drawing mode: reduce strokeDashoffset to reveal stroke
+                const targetOffset = pathLength * (1 - this.totalProgress / 100);
+                
+                gsap.to(pathData.element, {
+                    strokeDashoffset: targetOffset,
+                    duration: 0.8,
+                    ease: "power2.out"
+                });
+            } else {
+                // Erasing mode: increase strokeDashoffset to hide stroke from the end
+                const currentProgress = this.totalProgress / 100;
+                const targetOffset = pathLength * (1 - currentProgress);
+                
+                // For erasing, we want to hide from the end, so we adjust the dash array
+                gsap.to(pathData.element, {
+                    strokeDashoffset: targetOffset,
+                    duration: 0.8,
+                    ease: "power2.out"
+                });
+            }
+        });
+    }
+    
+    startErasing() {
+        console.log('Starting erase animation');
+        this.isErasing = true;
+        this.totalProgress = 85; // Start erasing from nearly complete (100% - 15%)
+        this.updatePathProgress();
+    }
+    
+    createFallbackSVG() {
+        // Create a simple fallback SVG if loading fails
+        const fallbackSVG = `
+            <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 250 Q 100 150 150 200 T 250 150 Q 300 100 350 150" 
+                      stroke="white" stroke-width="3" fill="none" 
+                      stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        `;
+        this.container.innerHTML = fallbackSVG;
+        this.currentSVG = this.container.querySelector('svg');
+        this.prepareSVGForAnimation();
+    }
+    
+    reset() {
+        // Reset all paths and reload a new random SVG
+        this.animatedPaths = [];
+        this.totalProgress = 0;
+        this.isErasing = false;
+        this.initialize();
+    }
+    
+    // Legacy method name compatibility
+    growFromChoice(choiceIndex, wordChosen) {
+        this.animateOnChoice(choiceIndex);
+    }
+    
+
+}
+
+// Initialize SVG system
+let svgStrokeSystem = null;
 
 // Load a random starting chain
 async function loadRandomChain() {
@@ -351,70 +523,61 @@ function createStorylineAnimation() {
         ease: "power2.out"
     });
     
-    // Step 1: "following" appears (0.1s - 0.4s)
+    // Step 1: "following" appears (faster timing)
     storyTimeline.to(SELECTORS.FOLLOWING, {
         opacity: 1,
-        duration: 0.3,
+        duration: 0.2, // Faster: was 0.3
         ease: "power2.out"
-    }, 0.1);
+    }, 0.07); // Earlier start
     
-    // Step 2: Make SVG container visible and start path drawing (0.4s - 1.4s)
+    // Step 2: Make SVG container visible and start path drawing
     storyTimeline.to(SELECTORS.DOTTED_LINE_CONTAINER, {
         opacity: 1,
-        duration: 0.2,
+        duration: 0.15, // Faster: was 0.2
         ease: "power2.out"
-    }, 0.4);
+    }, 0.27);
     
-    // Phase 1: Path draws in completely (0.4s - 2.0s)
+    // Phase 1: Path draws in completely (faster)
     storyTimeline.to(path, {
         strokeDashoffset: 0, // Draw to 100%
-        duration: 1.6,
+        duration: 1.07, // Faster: was 1.6 (1.6/1.5 = 1.07)
         ease: "none" // Linear, constant speed
-    }, 0.4);
+    }, 0.27);
     
-    // Step 3: At 75% of drawing (1.6s) - "words" appears
+    // Step 3: "words" appears earlier
     storyTimeline.to(SELECTORS.WORDS, {
         opacity: 1,
-        duration: 0.3,
+        duration: 0.2, // Faster: was 0.3
         ease: "power2.out"
-    }, 1.6);
+    }, 1.07);
     
-    // Phase 2: Line travels through by creating moving segment (2.0s - 3.6s)
-    // Seamlessly transition to traveling effect
-    storyTimeline.set(path, {
-        strokeDasharray: function() {
-            return `${pathLength * 0.75} ${pathLength * 0.25}`; // 75% visible, 25% gap
-        },
-        strokeDashoffset: pathLength * 0.75 // Start position matches end of drawing
-    }, 2.0);
-    
-    // "following" starts fading as line begins traveling (2.0s)
+    // Fade out "following" (faster)
     storyTimeline.to(SELECTORS.FOLLOWING, {
         opacity: 0,
-        duration: 0.8,
+        duration: 0.53, // Faster: was 0.8
         ease: "power2.inOut"
-    }, 2.0);
+    }, 1.33);
     
-    // Animate the traveling line effect (2.0s - 3.6s)
-    storyTimeline.to(path, {
-        strokeDashoffset: -pathLength * 0.5, // Travel completely through and off
-        duration: 1.6,
-        ease: "none" // Linear, constant speed to match drawing phase
-    }, 2.0);
-    
-    // Step 4: "words" fades out as line exits (2.8s)
+    // Step 4: "words" fades out (faster)
     storyTimeline.to(SELECTORS.WORDS, {
         opacity: 0,
-        duration: 0.6,
+        duration: 0.4, // Faster: was 0.6
         ease: "power2.inOut"
-    }, 2.8);
+    }, 1.87);
     
-    // Step 5: SVG container fades out (3.4s)
+    // Phase 2: Un-draw the path back to invisible (faster)
+    storyTimeline.to(path, {
+        strokeDashoffset: -pathLength, // slide dash to hide line again
+        duration: 0.8, // Faster: was 1.2
+        ease: "none"
+    }, 1.87);
+    
+    // Step 5: SVG container fades out (faster)
     storyTimeline.to(SELECTORS.DOTTED_LINE_CONTAINER, {
         opacity: 0,
-        duration: 0.3,
+        duration: 0.2, // Faster: was 0.3
         ease: "power2.inOut"
-    }, 3.4);
+    }, 2.67);
     
     return storyTimeline;
 }
@@ -435,88 +598,45 @@ enterButton?.addEventListener('click', () => {
     const storyAnimation = createStorylineAnimation();
     transitionTimeline.add(storyAnimation, 0.5);
     
-    // Third: Transition to next screen after all individual elements have faded
-    transitionTimeline.to(SELECTORS.INTRO_SCREEN, {
+    // Third: Preload word chain BEFORE transitioning (faster timing)
+    transitionTimeline.add(() => {
+        // Start loading the word chain during the animation
+        initializeWordChain();
+    }, 2.87) // Faster: was 4.3 (4.3/1.5 = 2.87)
+    
+    // Fourth: Transition to next screen with overlapping fade (faster)
+    .to(SELECTORS.INTRO_SCREEN, {
         opacity: 0,
-        display: 'none',
-        duration: 0.2,
-        ease: "power2.inOut"
-    }, 4.2) // Wait until 0.5s + 3.7s story
+        duration: 0.4, // Faster: was 0.6
+        ease: "power2.inOut",
+        onComplete: () => {
+            gsap.set(SELECTORS.INTRO_SCREEN, { display: 'none' });
+        }
+    }, 3.0) // Faster: was 4.5 (4.5/1.5 = 3.0)
     .to(SELECTORS.OPTIONS_SCREEN, {
         display: 'block',
         opacity: 1,
-        duration: 0.3,
-        ease: "power2.out",
-        onComplete: () => {
-            // Initialize the word chain system when options screen appears
-            initializeWordChain();
-        }
-    });
+        duration: 0.53, // Faster: was 0.8
+        ease: "power3.out"
+    }, 3.13); // Faster: was 4.7 (4.7/1.5 = 3.13)
 });
 
 function createOptionSet(choices) {
-    const options = [];
-    
-    // Multiple position configurations that cycle through each page
-    const positionConfigurations = [
-        // Configuration 1: Classic spread
-        [
-            { top: '20%', left: '15%' },
-            { top: '45%', right: '20%' },  
-            { bottom: '25%', left: '25%' }
-        ],
-        // Configuration 2: Diagonal flow
-        [
-            { top: '15%', right: '15%' },
-            { top: '50%', left: '50%' },
-            { bottom: '20%', right: '25%' }
-        ],
-        // Configuration 3: Vertical column
-        [
-            { top: '25%', left: '70%' },
-            { top: '55%', left: '65%' },
-            { bottom: '30%', left: '75%' }
-        ],
-        // Configuration 4: Horizontal spread
-        [
-            { top: '60%', left: '10%' },
-            { top: '65%', left: '45%' },
-            { top: '55%', right: '15%' }
-        ],
-        // Configuration 5: Asymmetric placement
-        [
-            { top: '30%', left: '20%' },
-            { bottom: '40%', right: '30%' },
-            { top: '70%', left: '60%' }
-        ]
-    ];
-    
-    // Get current configuration based on the number of words chosen so far
-    const configIndex = currentSentence.length % positionConfigurations.length;
-    const positions = positionConfigurations[configIndex];
-    
-    choices.forEach((choice, index) => {
-        const position = positions[index] || { top: '50%', left: '50%' };
-        const positionStyle = Object.entries(position)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join('; ');
-            
-        const optionHTML = `
-            <div class="option" style="position: absolute; ${positionStyle}; transform: translate(-50%, -50%);">
-                <input type="radio" name="option" value="${choice}" id="option${index + 1}" data-keycode="${index + 1}" />
-                <label for="option${index + 1}">${choice}</label>
-                <span class="option-number">${index + 1}</span>
-            </div>
-        `;
-        options.push(optionHTML);
-    });
-    return options.join('');
+    // returns three options without inline positioning; container handles layout
+    return choices.map((choice, index) => `
+        <div class="option">
+            <input type="radio" name="option" value="${choice}" id="option${index + 1}" data-keycode="${index + 1}" />
+            <label for="option${index + 1}">${choice}</label>
+            <span class="option-number">${index + 1}</span>
+        </div>
+    `).join('');
 }
+
 
 async function updateOptions() {
     const optionsContainer = document.querySelector(SELECTORS.OPTION_CONTAINER);
     const sentence = document.querySelector(SELECTORS.SENTENCE);
-    
+    console.log('🔄 updateOptions invoked | current sentence:"' + sentence.innerText + '" opacity:' , window.getComputedStyle(sentence).opacity);
     // Initialize chain if not loaded
     if (!currentChain) {
         await initializeWordChain();
@@ -524,6 +644,7 @@ async function updateOptions() {
     
     // Get current word choices
     const choices = getCurrentOptions();
+    console.log('🎲 Choices this step:', choices);
     
     if (choices.length === 0 || choices.every(choice => choice.startsWith('[') || choice === '...' || choice === '—')) {
         // End of chain reached - continue typing the rest
@@ -532,34 +653,61 @@ async function updateOptions() {
         return;
     }
     
-    // Fade out existing options first
+    // Fade out existing options first (only if there are actual options to fade out)
     const existingOptions = optionsContainer.children;
-    if (existingOptions.length > 0) {
+    const hasExistingOptions = existingOptions.length > 0 && 
+                               [...existingOptions].some(option => option.querySelector && option.querySelector('input[type="radio"]'));
+    
+    if (hasExistingOptions) {
         await new Promise(resolve => {
             gsap.to(existingOptions, {
                 opacity: 0,
-                y: -20,
-                duration: 0.3,
-                stagger: 0.1,
+                y: -8,
+                duration: 0.25,
+                stagger: 0.02,
                 ease: "power2.in",
-                onComplete: resolve
+                onComplete: () => {
+                    // Create new options after fadeout completes
+                    optionsContainer.innerHTML = createOptionSet(choices);
+                    resolve();
+                }
             });
         });
+    } else {
+        // Create new options immediately if no existing ones
+        optionsContainer.innerHTML = createOptionSet(choices);
+    }
+
+    // Reveal sentence only if we actually have text to show (avoid empty flash)
+    if ((sentence.style.opacity === '0' || sentence.style.opacity === '') && sentence.innerText.trim().length > 0) {
+        console.log('👁️ Revealing sentence now — text:', sentence.innerText);
+        gsap.to(sentence, { 
+            opacity: 1, 
+            duration: 0.4, 
+            ease: 'power2.out',
+            delay: hasExistingOptions ? 0.05 : 0 // Minimal delay for smoother flow
+        });
+    } else if (sentence.innerText.trim().length === 0) {
+        console.log('🚫 Skip reveal — sentence still empty, will be shown after first word typed');
     }
     
-    // Create new options
-    optionsContainer.innerHTML = createOptionSet(choices);
-    
-    // Fade in new options with stagger effect
+    console.log('💬 options_container rect', optionsContainer.getBoundingClientRect());
+    // Fade in new options with stagger effect (or immediately if this is initial load)
     const newOptions = optionsContainer.children;
-    gsap.set(newOptions, { opacity: 0, y: 20 });
-    gsap.to(newOptions, {
-        opacity: 1,
-        y: 0,
-        duration: 0.4,
-        stagger: 0.15,
-        ease: "power2.out"
-    });
+    
+    // Always animate in new options (whether it's first load or subsequent)
+    if (newOptions.length > 0) {
+        gsap.fromTo(newOptions,
+            { opacity: 0, y: 15 },
+            { 
+                opacity: 1, 
+                y: 0, 
+                duration: 0.6, 
+                stagger: 0.08, 
+                ease: "power2.out"
+            }
+        );
+    }
     
     // Attach event listeners
     const options = optionsContainer.querySelectorAll(SELECTORS.OPTION);
@@ -579,97 +727,103 @@ async function updateOptions() {
             const nextNode = navigateToNext(selectedWord);
             
             if (nextNode) {
-                // Add typing animation for the selected word
-                typeWordToSentence(selectedWord, () => {
-                    // Check if we're approaching a dead end before continuing
-                    const futureChoices = getValidKeys(nextNode);
-                    
-                    // If we're about to hit a low-branching situation and the sentence is reasonable length,
-                    // offer a graceful restart to maintain the experience
-                    if (futureChoices.length <= 1 && currentSentence.length >= 4) {
-                        console.log('🔄 Low branching ahead - offering restart to maintain choices');
-                        offerGracefulRestart();
-                    } else {
-                        // Continue to next choice after typing animation
-                        updateOptions();
-                    }
-                });
+                // Trigger SVG animation based on choice
+                if (svgStrokeSystem) {
+                    const choiceIndex = [...options].indexOf(option);
+                    svgStrokeSystem.growFromChoice(choiceIndex, selectedWord);
+                }
+                
+                // Animate option fade-out sequence, then type the selected word
+                const allOpts = [...optionsContainer.querySelectorAll(SELECTORS.OPTION)];
+                const otherOpts = allOpts.filter(o => o !== option);
+
+                gsap.timeline()
+                    .to(otherOpts, {
+                        opacity: 0,
+                        duration: 0.15,
+                        stagger: 0.02,
+                        ease: 'power2.in'
+                    })
+                    .to(option, {
+                        opacity: 0,
+                        duration: 0.2,
+                        ease: 'power2.in',
+                        onStart: () => {
+                            typeWordToSentence(selectedWord, () => {
+                                // Check future branching potential
+                                const futureChoices = getValidKeys(nextNode);
+                                if (futureChoices.length <= 1 && currentSentence.length >= 4) {
+                                    console.log('🔄 Low branching ahead - offering restart to maintain choices');
+                                    offerGracefulRestart();
+                                } else {
+                                    updateOptions();
+                                }
+                            }, true); // skipOptionFade: we already faded options
+                        }
+                    });
             } else {
-                // Dead end reached
+                // Dead end reached (no next node)
                 typeWordToSentence(selectedWord, () => {
                     updateOptions(); // This will trigger completion
-                });
+                }, true);
             }
         });
     });
 }
 
-// Typing animation for selected words with smooth opacity effects
-function typeWordToSentence(word, callback) {
+// Simplified and robust typing animation for selected words
+function typeWordToSentence(word, callback, skipOptionFade = false) {
     const sentence = document.querySelector(SELECTORS.SENTENCE);
-    const currentText = sentence.innerText;
-    const newText = currentText ? `${currentText} ${word}` : word;
+    console.log('⌨️ Typing started for word:', word, '| existing text:', sentence.innerText);
+    const currentText = sentence.innerText.replace(/\|/g, ''); // Clean any leftover cursors
+    const textToType = currentText ? ` ${word}` : word;
     
-    // Clear options while typing with fade out
+    // Ensure the sentence is visible
+    gsap.set(sentence, { autoAlpha: 1 });
+    
+    // Clear options with a fade-out effect (unless caller already handled it)
     const optionsContainer = document.querySelector(SELECTORS.OPTION_CONTAINER);
-    gsap.to(optionsContainer.children, {
-        opacity: 0,
-        duration: 0.2,
-        stagger: 0.05,
-        onComplete: () => {
-            optionsContainer.innerHTML = '';
-        }
-    });
+    if (!skipOptionFade && optionsContainer.children.length > 0) {
+        gsap.to(optionsContainer.children, {
+            opacity: 0,
+            duration: 0.2,
+            onComplete: () => {
+                optionsContainer.innerHTML = '';
+            }
+        });
+    } else {
+        // Caller will clean up or no options to clear
+        optionsContainer.innerHTML = '';
+    }
     
-    // Start with current text and smooth opacity for new characters
-    sentence.innerHTML = currentText + '<span class="typing-cursor">|</span>';
-    
-    let charIndex = currentText.length;
-    if (currentText) charIndex++; // Account for space
-    
+    let i = 0;
     const typeInterval = setInterval(() => {
-        if (charIndex < newText.length) {
-            const typedPortion = newText.substring(0, charIndex + 1);
-            const newChar = newText[charIndex];
-            
-            // Create new character with opacity animation
-            sentence.innerHTML = newText.substring(0, charIndex) + 
-                               `<span class="new-char" style="opacity: 0">${newChar}</span>` + 
-                               '<span class="typing-cursor">|</span>';
-            
-            // Animate the new character in
-            gsap.to('.new-char', {
-                opacity: 1,
-                duration: 0.15,
-                ease: "power2.out",
-                onComplete: () => {
-                    // Remove the span wrapper after animation
-                    sentence.innerHTML = typedPortion + '<span class="typing-cursor">|</span>';
-                }
-            });
-            
-            charIndex++;
+        if (i < textToType.length) {
+            sentence.innerHTML = currentText + textToType.substring(0, i + 1) + '<span class="typing-cursor">|</span>';
+            i++;
         } else {
             clearInterval(typeInterval);
-            // Fade out cursor and show final text
-            gsap.to('.typing-cursor', {
-                opacity: 0,
-                duration: 0.2,
-                onComplete: () => {
-                    sentence.innerHTML = newText;
-                    // Call callback to continue
-                    if (callback) {
-                        setTimeout(callback, 300); // Brief pause before showing new options
-                    }
-                }
-            });
+            // Remove cursor and finalize the sentence
+            sentence.innerHTML = currentText + textToType;
+            console.log('✅ Typing finished. New sentence text:', sentence.innerText);
+            if (callback) {
+                setTimeout(callback, 200); // Brief pause before next action
+            }
         }
-    }, 80); // Slightly slower for smoother effect
+    }, 60); // Typing speed
 }
 
 // Initialize the word chain system with smart path selection
 async function initializeWordChain() {
     const sentence = document.querySelector(SELECTORS.SENTENCE);
+    
+    // Initialize SVG system if not already created
+    if (!svgStrokeSystem) {
+        svgStrokeSystem = new SVGStrokeSystem();
+    }
+    
+    // Prepare sentence element with smooth transition
+    gsap.set(sentence, { opacity: 0 });
     sentence.innerText = '';
     
     // Reset poem tracking
@@ -688,7 +842,10 @@ async function initializeWordChain() {
             const startingWord = Object.keys(currentChain)[0];
             currentNode = currentChain[startingWord];
             currentSentence = [startingWord];
+            // Prepare the sentence text (keep hidden until options ready)
             sentence.innerText = startingWord;
+            console.log('📃 Initial sentence text set (hidden):', sentence.innerText);
+            // We reveal the sentence later in updateOptions to avoid any flash
             
             console.log(`🌟 Starting with "${startingWord}" - evaluating initial branching...`);
             
@@ -726,6 +883,9 @@ function findPoemCompletion(node, currentPath = [], maxDepth = 10) {
     // If multiple choices or no choices, return what we have
     return currentPath;
 }
+
+// Track how many poems have been generated
+let poemCounter = 0;
 
 // Get poem metadata and completion
 async function getPoemCompletion() {
@@ -776,38 +936,21 @@ function formatAsPoetry(text) {
     return lines;
 }
 
-// Generate plausible attribution based on content and era
+// Generate attribution – first two poems get known authors in sequence
 function generateAttribution(text, poemId) {
-    const authors = [
-        { name: "William Blake", era: "Romantic" },
-        { name: "Emily Dickinson", era: "American" },
-        { name: "Walt Whitman", era: "American" },
-        { name: "Robert Frost", era: "Modern" },
-        { name: "William Wordsworth", era: "Romantic" },
-        { name: "Samuel Taylor Coleridge", era: "Romantic" },
-        { name: "Lord Byron", era: "Romantic" },
-        { name: "John Keats", era: "Romantic" },
-        { name: "Percy Bysshe Shelley", era: "Romantic" },
-        { name: "Alfred Lord Tennyson", era: "Victorian" }
-    ];
-    
-    // Pick author based on poem ID or content hints
-    let selectedAuthor;
-    if (poemId) {
-        selectedAuthor = authors[poemId % authors.length];
-    } else {
-        selectedAuthor = authors[Math.floor(Math.random() * authors.length)];
-    }
-    
-    // Generate a title based on key words in the text
-    const words = text.toLowerCase().split(' ').filter(w => w.length > 3);
-    const titleWord = words[Math.floor(Math.random() * Math.min(words.length, 5))] || 'untitled';
-    const title = titleWord.charAt(0).toUpperCase() + titleWord.slice(1);
-    
+    // NOTE: Previously this function assigned random historical authors.
+    // To ensure accuracy we now label poems as "Anonymous" unless we have
+    // explicit metadata for the author embedded in the chain (not yet available).
+
+    // Use the first few significant words for a generic title
+    const words = text.split(/\s+/).filter(w => w.length > 3);
+    const titleCore = words.slice(0, 3).join(' ').trim();
+    const title = titleCore ? `\"${titleCore.replace(/^./, c => c.toUpperCase())}\"` : "Untitled";
+
     return {
-        author: selectedAuthor.name,
-        title: `"${title}"`,
-        era: selectedAuthor.era
+        author: "",
+        title,
+        era: ""
     };
 }
 
@@ -817,7 +960,13 @@ async function typeCompletePoemContinuation() {
     const sentence = document.querySelector(SELECTORS.SENTENCE);
     
     // Clear options while we continue typing
-    optionsContainer.innerHTML = '';
+    gsap.to(optionsContainer.children, {
+        opacity: 0,
+        duration: 0.2,
+        onComplete: () => {
+            optionsContainer.innerHTML = '';
+        }
+    });
     
     // Get the poem completion
     const poemData = await getPoemCompletion();
@@ -854,48 +1003,122 @@ async function typeCompletePoemContinuation() {
             const finalText = baseText + completionText;
             sentence.innerHTML = finalText;
             
-            // Show attribution after a pause
-            setTimeout(() => {
-                showPoemAttribution(poemData);
-            }, 1000);
+            // Immediately start smooth transition to attribution and new poem (no pause)
+            showPoemAttribution(poemData);
         }
     }, 45); // Letter-by-letter typing speed (similar to intro)
 }
 
-// Show attribution and follow new words button
+// Show attribution and then slide poem up and reset for new poem
 function showPoemAttribution(poemData) {
-    const optionsContainer = document.querySelector(SELECTORS.OPTION_CONTAINER);
-    const sentence = document.querySelector(SELECTORS.SENTENCE);
+    console.log('🎤 showPoemAttribution → author:', poemData.author, '| title:', poemData.title);
     
-    // Add some space and show attribution
-    setTimeout(() => {
-        const currentText = sentence.innerHTML;
-        sentence.innerHTML = currentText + '<br><br><div style="text-align: right; opacity: 0.7; font-size: 0.9rem; margin-top: 2rem;">— ' + poemData.author + '</div>';
+    const sentence = document.querySelector(SELECTORS.SENTENCE);
+    const optionsContainer = document.querySelector(SELECTORS.OPTION_CONTAINER);
+    
+    // Create smooth transition timeline for attribution and new poem setup
+    const attributionTimeline = gsap.timeline();
+    
+    // Phase 1: Fade in attribution smoothly (starts immediately after typing)
+    attributionTimeline.add(() => {
+        const currentHTML = sentence.innerHTML;
+        const poemLine = currentHTML.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]*>/g, '').trim();
+        const query = encodeURIComponent(`${poemLine} poem`);
+        const searchUrl = `https://www.google.com/search?q=${query}`;
+        const attributionHTML = '<a href="' + searchUrl + '" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:underline;">Follow this thought</a>';
+        sentence.innerHTML = currentHTML + '<br><br><div class="attribution-link" style="text-align:center; opacity:0; font-size:0.9rem; margin-top:1rem;">' + attributionHTML + '</div>';
         
-        // Show the Follow New Words button
-        setTimeout(() => {
-            optionsContainer.innerHTML = `
-                <div style="position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%); text-align: center;">
-                    <button class="restart-button follow-new-words">Follow New Words</button>
-                </div>
-            `;
-            
-            const restartButton = optionsContainer.querySelector('.follow-new-words');
-            restartButton.addEventListener('click', () => {
-                console.log('🚀 Following new words - fresh start');
-                initializeWordChain();
-            });
-            
-            // Animate in the button
-            gsap.fromTo('.follow-new-words', 
-                { opacity: 0, y: 20 },
-                { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
-            );
-            
-        }, 1500);
+        // Animate attribution fade-in
+        gsap.to('.attribution-link', {
+            opacity: 0.8,
+            duration: 0.6,
+            ease: "power2.out"
+        });
+    }, 0)
+    
+    // Phase 2: Simultaneously start new poem creation and slide transition (no pause)
+    .add(() => {
+        // Convert current elements to finished state
+        sentence.classList.remove('sentence');
+        sentence.classList.add('finished-sentence');
+        optionsContainer.classList.remove('options_container');
+        optionsContainer.classList.add('finished-options');
         
-    }, 500);
+        // Create new poem elements
+        const newElements = createNewPoemElements();
+        
+        // Simultaneous animations for smooth transition with vertical stacking
+        const transitionTL = gsap.timeline();
+        
+        // Instead of sliding up with transform, just fade the old poem and keep it in document flow
+        transitionTL.to([sentence, optionsContainer], {
+            opacity: 0.8, // Fade but keep visible for scrolling
+            duration: 0.6,
+            ease: "power2.inOut",
+            onComplete: () => {
+                // Scroll to the new poem smoothly after old one fades
+                const newSentence = newElements[0];
+                if (newSentence) {
+                    newSentence.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center'
+                    });
+                }
+            }
+        }, 0)
+        
+        // Fade in new poem elements at the same time
+        .fromTo(newElements, {
+            opacity: 0,
+            y: 20
+        }, {
+            opacity: 1,
+            y: 0,
+            duration: 0.8,
+            ease: "power2.out"
+        }, 0.2) // Slight delay for smoother feel
+        
+        // Initialize word chain as transition completes
+        .add(() => {
+            poemCounter++;
+            // Reset SVG system for new poem if we have several poems
+            if (poemCounter > 2 && svgStrokeSystem) {
+                svgStrokeSystem.reset();
+            }
+            initializeWordChain();
+        }, 0.4); // Start initialization slightly before transition ends
+        
+    }, 0.8); // Start transition 0.8s after attribution appears
 }
+
+// Create new poem elements and return them for animation
+function createNewPoemElements() {
+    const optionsScreen = document.querySelector(SELECTORS.OPTIONS_SCREEN);
+    
+    // Create new poem elements that will stack naturally in document flow
+    const newSentence = document.createElement('div');
+    newSentence.className = 'sentence';
+    newSentence.innerHTML = '';
+    
+    const newOptionsContainer = document.createElement('div');
+    newOptionsContainer.className = 'options_container';
+    newOptionsContainer.innerHTML = '';
+    
+    // Add new elements to the screen (they will stack below previous poems)
+    optionsScreen.appendChild(newSentence);
+    optionsScreen.appendChild(newOptionsContainer);
+    
+    // Set initial state for animation (no transform positioning needed)
+    gsap.set([newSentence, newOptionsContainer], {
+        opacity: 0,
+        y: 20, // Small offset for smooth fade-in animation
+        zIndex: 1000 // Ensure new elements appear above finished ones during creation
+    });
+    
+    return [newSentence, newOptionsContainer];
+}
+
+// This function is no longer needed - poems now reset in place
 
 // Offer graceful restart when approaching dead ends
 function offerGracefulRestart() {
@@ -906,7 +1129,7 @@ function offerGracefulRestart() {
 loadDottedLineSVG();
 
 // Typewriter effect variables
-const INTRO_TEXT_CONTENT = "Every thought is a path shaped by the words we choose";
+const INTRO_TEXT_CONTENT = "Every thought is a path shaped by\nthe words we choose";
 let typingStarted = false;
 
 // Typewriter animation function
@@ -914,38 +1137,98 @@ function startTypewriterEffect() {
     if (typingStarted) return;
     typingStarted = true;
     
-    // Hide initial cursor and show typing container
-    gsap.to(SELECTORS.CURSOR_CONTAINER, {
-        opacity: 0,
-        duration: 0.3,
-        ease: "power2.out",
-        onComplete: () => {
-            document.querySelector(SELECTORS.CURSOR_CONTAINER).style.display = 'none';
-            document.querySelector(SELECTORS.INTRO_TEXT).style.display = 'block';
-            gsap.to(SELECTORS.INTRO_TEXT, {
-                opacity: 1,
-                duration: 0.3,
-                ease: "power2.out"
-            });
-        }
-    });
+    // Hide initial cursor and show typing container with smooth transition
+    const transitionTimeline = gsap.timeline();
     
-    // Type out the text character by character
+    transitionTimeline
+        .to(SELECTORS.CURSOR_CONTAINER, {
+            opacity: 0,
+            duration: 0.2, // Faster: was 0.3
+            ease: "power2.out"
+        })
+        .set(SELECTORS.CURSOR_CONTAINER, { display: 'none' })
+        .set(SELECTORS.INTRO_TEXT, { display: 'block', opacity: 0 })
+        .to(SELECTORS.INTRO_TEXT, {
+            opacity: 1,
+            duration: 0.25, // Faster: was 0.4
+            ease: "power2.out"
+        }, "-=0.05"); // Tighter timing
+    
+    // Smooth letter-by-letter fade-in effect with leading cursor
     const typedTextElement = document.querySelector(SELECTORS.TYPED_TEXT);
+    const typingCursor = document.querySelector(SELECTORS.TYPING_CURSOR);
     const characters = INTRO_TEXT_CONTENT.split('');
     let currentIndex = 0;
     
-    const typeInterval = setInterval(() => {
-        if (currentIndex < characters.length) {
-            const char = characters[currentIndex];
+    // Function to rebuild text with cursor in the correct position
+    function updateTextWithCursor() {
+        typedTextElement.innerHTML = '';
+        
+        // Add revealed letters
+        for (let i = 0; i < currentIndex; i++) {
+            const char = characters[i];
             if (char === '\n') {
-                typedTextElement.innerHTML += '<br>';
+                typedTextElement.appendChild(document.createElement('br'));
             } else {
-                typedTextElement.innerHTML += char;
+                const span = document.createElement('span');
+                span.textContent = char;
+                span.style.opacity = '1';
+                span.classList.add('letter-revealed');
+                typedTextElement.appendChild(span);
             }
+        }
+        
+        // Add cursor at current position (leading the next letter)
+        if (currentIndex < characters.length) {
+            typedTextElement.appendChild(typingCursor);
+        }
+        
+        // Add unrevealed letters (hidden but maintaining layout)
+        for (let i = currentIndex; i < characters.length; i++) {
+            const char = characters[i];
+            if (char === '\n') {
+                typedTextElement.appendChild(document.createElement('br'));
+            } else {
+                const span = document.createElement('span');
+                span.textContent = char;
+                span.style.opacity = '0';
+                span.style.visibility = 'hidden';
+                span.classList.add('letter-unrevealed');
+                typedTextElement.appendChild(span);
+            }
+        }
+        
+        // If all letters are revealed, add cursor at the end
+        if (currentIndex >= characters.length) {
+            typedTextElement.appendChild(typingCursor);
+        }
+    }
+    
+    // Initial setup
+    updateTextWithCursor();
+    
+    // Animate letters appearing with smooth fade
+    const revealInterval = setInterval(() => {
+        if (currentIndex < characters.length) {
             currentIndex++;
+            
+            // Update the text structure with cursor in new position
+            updateTextWithCursor();
+            
+            // Animate the newly revealed letter
+            const revealedLetters = typedTextElement.querySelectorAll('.letter-revealed');
+            if (revealedLetters.length > 0) {
+                const lastRevealed = revealedLetters[revealedLetters.length - 1];
+                lastRevealed.style.opacity = '0';
+                lastRevealed.style.transition = 'opacity 0.4s ease-out';
+                
+                // Trigger fade in
+                setTimeout(() => {
+                    lastRevealed.style.opacity = '1';
+                }, 10);
+            }
         } else {
-            clearInterval(typeInterval);
+            clearInterval(revealInterval);
             // Hide typing cursor and show Enter button after a brief pause
             setTimeout(() => {
                 gsap.to(SELECTORS.TYPING_CURSOR, {
@@ -959,9 +1242,9 @@ function startTypewriterEffect() {
                     duration: 0.5,
                     ease: "power2.out"
                 });
-            }, 500);
+            }, 200);
         }
-    }, (10000 / INTRO_TEXT_CONTENT.length) * 0.5); // 2x faster than original
+    }, (10000 / characters.length) * 0.33); // 1.5x faster (was 0.5, now 0.33)
 }
 
 // Listen for any key press, click, or touch to start typing
@@ -1022,23 +1305,34 @@ window.addEventListener('keypress', (e) => {
 });
 
 // Function to skip intro and go directly to options
-function skipToOptions() {
+async function skipToOptions() {
     // Kill any ongoing GSAP animations
     gsap.killTweensOf("*");
     
-    // Hide intro screen immediately
-    gsap.set(SELECTORS.INTRO_SCREEN, {
+    // Create smooth skip transition
+    const skipTimeline = gsap.timeline();
+    
+    // Fade out intro screen
+    skipTimeline.to(SELECTORS.INTRO_SCREEN, {
         opacity: 0,
-        display: 'none'
+        duration: 0.3,
+        ease: "power2.inOut",
+        onComplete: () => {
+            gsap.set(SELECTORS.INTRO_SCREEN, { display: 'none' });
+        }
     });
     
-    // Show options screen immediately
-    gsap.set(SELECTORS.OPTIONS_SCREEN, {
+    // Initialize word chain during fade
+    skipTimeline.add(async () => {
+        await initializeWordChain();
+    }, 0.1);
+    
+    // Fade in options screen
+    skipTimeline.to(SELECTORS.OPTIONS_SCREEN, {
         display: 'block',
-        opacity: 1
-    });
-    
-    // Initialize the word chain system
-    initializeWordChain();
+        opacity: 1,
+        duration: 0.4,
+        ease: "power2.out"
+    }, 0.2);
 }
 

@@ -11,6 +11,11 @@
   </head>
   <body>
     <div id="app">
+      <!-- SVG Stroke Animation Background -->
+      <div id="svg-background" class="svg-background">
+        <!-- SVG will be loaded here -->
+      </div>
+      <div class="gradient-overlay"></div>
       <div class="intro_screen">
         <div class="intro_text_container">
           <div class="cursor_container">
@@ -31,23 +36,7 @@
       </div>
       <div class="options_screen">
         <div class="sentence"></div>
-        <div class="options_container">
-          <div class="option">
-            <input type="radio" name="option" value="And" id="option1" data-keycode="1" />
-            <label for="option1">And</label>
-            <label for="option1">1</label>
-          </div>
-          <div class="option">
-            <input type="radio" name="option" value="Or" id="option2" data-keycode="2"/>
-            <label for="option2">Or</label>
-            <label for="option2">2</label>
-          </div>
-          <div class="option">
-            <input type="radio" name="option" value="That" id="option3" data-keycode="3"/>
-            <label for="option3">That</label>
-            <label for="option3">3</label>
-          </div>
-        </div>
+        <div class="options_container"></div>
 
       </div>
     </div>

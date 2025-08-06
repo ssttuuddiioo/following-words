@@ -5,7 +5,7 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #4a90a4;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -24,11 +24,64 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #4a90a4 0%, #6ba5b9 100%);
+  height: 100vh;
+  background: #4a90a4;
+}
+
+/* SVG Stroke Animation Background */
+.svg-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1; /* Behind everything but above body background */
+  opacity: 0.4; /* Subtle presence */
+  transition: opacity 0.5s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Make SVG more visible during options screen */
+.options_screen[style*="display: block"] ~ .svg-background {
+  opacity: 0.6;
+}
+
+/* SVG path styling */
+.svg-background svg {
+  width: 80%;
+  height: 80%;
+  max-width: 800px;
+  max-height: 600px;
+}
+
+.svg-background path {
+  stroke: white;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.3));
+  opacity: 0.8;
+}
+
+/* Responsive SVG visibility */
+@media (max-width: 768px) {
+  .svg-background {
+    opacity: 0.3; /* Less prominent on mobile */
+  }
+  
+  .options_screen[style*="display: block"] ~ .svg-background {
+    opacity: 0.4;
+  }
+  
+  .svg-background svg {
+    width: 90%;
+    height: 90%;
+  }
 }
 
 h1 {
@@ -82,7 +135,8 @@ h1 {
   font-family: 'Poltawski Nowy', serif;
   text-align: center;
   line-height: 1.6;
-  max-width: 600px;
+  white-space: pre-line;
+  max-width: none;
   opacity: 0;
   transition: opacity 0.5s ease;
   display: none;
@@ -94,6 +148,23 @@ h1 {
 .typed_text {
   color: white;
   font-family: 'Poltawski Nowy', serif;
+}
+
+/* Smooth letter fade animation */
+.letter-fade {
+  opacity: 0;
+  transition: opacity 0.4s ease-out;
+  visibility: hidden;
+}
+
+.letter-revealed {
+  opacity: 1;
+  transition: opacity 0.4s ease-out;
+}
+
+.letter-unrevealed {
+  opacity: 0;
+  visibility: hidden;
 }
 
 .typing_cursor {
@@ -124,11 +195,11 @@ h1 {
 
 .following {
   color: white;
-  font-size: 4rem;
+  font-size: 2.8rem;
   font-weight: 400;
   font-style: italic;
   font-family: 'Poltawski Nowy', serif;
-  text-align: left;
+  text-align: center;
   align-self: center;
   margin-left: 2rem;
   opacity: 0;
@@ -136,7 +207,7 @@ h1 {
 
 .words {
   color: white;
-  font-size: 4rem;
+  font-size: 2.8rem;
   font-weight: 400;
   font-style: italic;
   font-family: 'Poltawski Nowy', serif;
@@ -165,10 +236,11 @@ h1 {
 }
 
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: inherit;
 }
 
 .logo {
@@ -215,12 +287,13 @@ button {
   letter-spacing: 2px;
   text-transform: lowercase;
   transition: all 0.3s ease;
-  margin-top: -8rem;
+  margin-top: 2rem;
   z-index: 10;
   position: relative;
   opacity: 0;
   pointer-events: none;
   cursor: pointer;
+  transform: translateY(-150px);
 }
 
 /* Removed skip hint from enter button */
@@ -237,26 +310,15 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-/* Responsive Design */
+/* Intro Screen Responsive Design */
 @media (max-width: 768px) {
-  .blinking_cursor {
-    font-size: 1.4rem;
-    font-family: 'Poltawski Nowy', serif;
-  }
-  
   .intro_text {
-    font-size: 1.4rem;
+    font-size: 2.6rem;
     max-width: 90%;
-    font-family: 'Poltawski Nowy', serif;
   }
   
-  .typed_text {
-    font-size: 1.4rem;
-    font-family: 'Poltawski Nowy', serif;
-  }
-  
-  .typing_cursor {
-    font-size: 1.4rem;
+  .blinking_cursor, .typed_text, .typing_cursor {
+    font-size: 1.8rem;
     font-family: 'Poltawski Nowy', serif;
   }
   
@@ -274,7 +336,7 @@ button:focus-visible {
   }
   
   .following, .words {
-    font-size: 3rem;
+    font-size: 2.6rem;
     font-family: 'Poltawski Nowy', serif;
     text-align: center;
     margin: 0;
@@ -291,39 +353,178 @@ button:focus-visible {
   }
 }
 
+@media (max-width: 600px) {
+  .intro_text {
+    font-size: 2.2rem;
+  }
+  
+  .blinking_cursor, .typed_text, .typing_cursor {
+    font-size: 1.5rem;
+  }
+  
+  .following, .words {
+    font-size: 2.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .intro_text {
+    font-size: 1.9rem;
+  }
+  
+  .blinking_cursor, .typed_text, .typing_cursor {
+    font-size: 1.3rem;
+  }
+  
+  .following, .words {
+    font-size: 1.9rem;
+  }
+  
+  .dotted_line_container {
+    width: 250px;
+    height: 148px;
+  }
+}
+
+@media (max-width: 400px) {
+  .intro_text {
+    font-size: 1.6rem;
+    max-width: 95%;
+  }
+  
+  .blinking_cursor, .typed_text, .typing_cursor {
+    font-size: 1.1rem;
+  }
+  
+  .following, .words {
+    font-size: 1.6rem;
+  }
+  
+  .dotted_line_container {
+    width: 200px;
+    height: 118px;
+  }
+  
+  .title_container {
+    gap: 1.5rem;
+  }
+}
+
+/* Top Gradient Overlay for Sliding Effect */
+.gradient-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 300px;
+  background: linear-gradient(to bottom, #4a90a4 0%, rgba(74, 144, 164, 0.9) 30%, rgba(74, 144, 164, 0.5) 70%, transparent 100%);
+  pointer-events: none;
+  z-index: 500; /* Above finished poems but below active poems */
+}
+
+/* Ensure active poems appear above the gradient and finished poems */
+.sentence {
+  position: relative;
+  z-index: 1000;
+  transition: all 0.8s ease; /* Smooth transitions */
+}
+
+.options_container {
+  position: relative;
+  z-index: 1000;
+  transition: all 0.8s ease; /* Smooth transitions */
+}
+
+/* Finished poems should be below active poems but above gradient for interaction */
+.finished-sentence {
+  position: relative;
+  z-index: 600; /* Above gradient (500) but below active poems (1000) */
+  transition: all 0.8s ease; /* Smooth transitions */
+}
+
+.finished-options {
+  position: relative;
+  z-index: 600; /* Above gradient (500) but below active poems (1000) */
+  transition: all 0.8s ease; /* Smooth transitions */
+}
+
+/* Attribution link styling for smooth fade-in */
+.attribution-link {
+  transition: opacity 0.6s ease;
+}
+
+.attribution-link a {
+  color: #87CEEB !important;
+  text-decoration: underline !important;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.attribution-link a:hover {
+  color: white !important;
+  text-shadow: 0 0 5px rgba(135, 206, 235, 0.5);
+  transform: translateY(-1px);
+}
+
 /* Options Screen Styling */
 .options_screen {
   display: none;
   opacity: 0;
   min-height: 100vh;
-  padding: 2rem;
-  max-width: 800px;
-  margin: 0 auto;
+  padding: 4rem 0; /* More padding for first poem centering */
+  max-width: none;
+  margin: 0;
+  position: relative;
+  overflow-y: auto; /* Allow scrolling for multiple poems */
+  box-sizing: border-box;
+}
+
+.options_screen[style*="display: block"] {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: flex-start; /* Stack poems vertically */
+  align-items: center;
+  position: relative;
+  min-height: 100vh; /* Ensure full height for scrolling */
+}
+
+/* Add some spacing for the first poem to appear centered initially */
+.options_screen .sentence:first-of-type {
+  margin-top: 20vh; /* Center the first poem vertically */
 }
 
 .sentence {
+  background: transparent;
   color: white;
-  font-size: 6rem;
+  font-size: 3rem;
   font-weight: 400;
   font-style: italic;
   font-family: 'Poltawski Nowy', serif;
-  text-align: left;
+  text-align: center;
   line-height: 1.4;
-  position: absolute;
-  top: 3rem;
-  left: 3rem;
-  min-height: 2em;
-  max-width: 70%;
-  z-index: 10;
-  transition: opacity 0.3s ease;
+  position: relative;
+  margin: 0 auto 2rem auto;
+  min-height: 1.2em;
+  width: 850px;
+  max-width: min(850px, 95vw);
+  transition: all 0.8s ease; /* Smooth transitions for all properties */
+  contain: layout style;
+  will-change: transform, opacity;
+  white-space: normal;
+  transform-origin: center top; /* Ensure smooth scaling and movement */
 }
 
 .options_container {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  padding: 0;
-  margin: 0;
+  display: flex;
+  justify-content: center;
+  gap: 80px;
+  width: 65%;
+  max-width: 800px;
+  padding: 2rem 0;
+  margin: 0 auto;
+  box-sizing: border-box;
+  will-change: transform, opacity;
+  transform-origin: center top;
 }
 
 .option {
@@ -331,12 +532,19 @@ button:focus-visible {
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 120px;
+  /* let width be auto based on content */
   text-align: center;
+  word-wrap: break-word;
+  z-index: 5;
 }
 
 .option:hover {
-  transform: scale(1.1);
+  transform: translateY(-1px);
+  transition: all 0.2s ease-out;
+}
+
+.option {
+  transition: all 0.2s ease-out;
 }
 
 .option input[type="radio"] {
@@ -355,7 +563,7 @@ button:focus-visible {
 
 .option label {
   color: white;
-  font-size: 2rem;
+  font-size: 2.8rem;
   font-family: 'Poltawski Nowy', serif;
   cursor: pointer;
   display: block;
@@ -383,7 +591,7 @@ button:focus-visible {
   font-style: italic;
   font-size: 1.3rem;
   font-family: 'Poltawski Nowy', serif;
-  margin: 3rem 0;
+  margin: 1rem 0;
   animation: fadeIn 1s ease-out;
 }
 
@@ -398,7 +606,7 @@ button:focus-visible {
   cursor: pointer;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
-  margin: 0 auto;
+  margin: 0;
   display: block;
   letter-spacing: 1px;
 }
@@ -425,7 +633,44 @@ button:focus-visible {
   transition: opacity 0.15s ease-out;
 }
 
+.finished-sentence {
+  color: white;
+  font-size: 3rem;
+  font-weight: 400;
+  font-style: italic;
+  font-family: 'Poltawski Nowy', serif;
+  text-align: center;
+  line-height: 1.4;
+  position: relative;
+  margin: 0 auto 3rem auto; /* Increased margin for better spacing */
+  width: 850px;
+  max-width: min(850px, 95vw);
+  white-space: normal;
+  opacity: 0.8; /* Slightly more faded but still readable */
+  /* Remove pointer-events: none to allow clicking links */
+  transition: all 0.8s ease;
+}
+
+.finished-options {
+  /* Remove pointer-events: none to allow interactions if needed */
+  opacity: 0.3; /* More faded since these are no longer interactive */
+  margin-bottom: 2rem;
+}
+
 /* Follow New Words button styling */
+
+/* --- FIXED BACKGROUND SPANNING --- */
+html, body {
+  background: #4a90a4 !important;
+  background-color: #4a90a4; height: 100%; }
+body { background-attachment: fixed; /* keep static color */ }
+/* Removed duplicate options_container rules - now defined above */
+.poem-block { 
+  width: 850px; 
+  max-width: min(850px, 95vw);
+  margin: 0 auto;
+}
+/* --------------------------------- */
 .follow-new-words {
   background: transparent !important;
   border: none !important;
@@ -444,11 +689,102 @@ button:focus-visible {
   transform: translateY(-2px) !important;
 }
 
-/* Mobile responsiveness */
+/* Responsive Design - Tablet */
 @media (max-width: 768px) {
+  .sentence, .finished-sentence {
+    font-size: 2.4rem;
+    line-height: 1.3;
+    margin: 0 auto 1.5rem auto;
+  }
+  
+  .options_container {
+    width: 85%;
+    gap: 50px;
+    padding: 1.5rem 0;
+  }
+  
+  .option label {
+    font-size: 2.2rem;
+  }
+  
   .follow-new-words {
     font-size: 1rem !important;
     padding: 0.8rem 1.5rem !important;
+  }
+}
+
+/* Responsive Design - Large Mobile */
+@media (max-width: 600px) {
+  .sentence, .finished-sentence {
+    font-size: 2rem;
+    line-height: 1.3;
+    margin: 0 auto 1.2rem auto;
+  }
+  
+  .options_container {
+    width: 90%;
+    gap: 40px;
+    padding: 1.2rem 0;
+  }
+  
+  .option label {
+    font-size: 1.9rem;
+  }
+}
+
+/* Responsive Design - Small Mobile */
+@media (max-width: 480px) {
+  .sentence, .finished-sentence {
+    font-size: 1.7rem;
+    line-height: 1.2;
+    margin: 0 auto 1rem auto;
+  }
+  
+  .options_container {
+    width: 95%;
+    gap: 30px;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0;
+  }
+  
+  .option label {
+    font-size: 1.6rem;
+  }
+  
+  .follow-new-words {
+    font-size: 0.9rem !important;
+    padding: 0.7rem 1.2rem !important;
+  }
+}
+
+/* Responsive Design - Very Small Mobile (400px and below) */
+@media (max-width: 400px) {
+  .sentence, .finished-sentence {
+    font-size: 1.4rem;
+    line-height: 1.2;
+    margin: 0 auto 0.8rem auto;
+    padding: 0 0.5rem;
+  }
+  
+  .options_container {
+    width: 98%;
+    gap: 25px;
+    padding: 0.8rem 0;
+  }
+  
+  .option label {
+    font-size: 1.3rem;
+  }
+  
+  .completion-message {
+    font-size: 1rem;
+    margin: 0.8rem 0;
+  }
+  
+  .follow-new-words {
+    font-size: 0.8rem !important;
+    padding: 0.6rem 1rem !important;
   }
 }
 
