@@ -110,9 +110,9 @@ class SVGStrokeSystem {
     animateOnChoice(choiceIndex) {
         if (this.animatedPaths.length === 0) return;
         
-        // Advance progress by 15% per choice
+        // Advance progress by 5% per choice
         if (!this.isErasing) {
-            this.totalProgress = Math.min(this.totalProgress + 15, 100);
+            this.totalProgress = Math.min(this.totalProgress + 5, 100);
             console.log(`SVG progress: ${this.totalProgress}%`);
             
             // If we've reached 100%, start erasing after a brief pause
@@ -122,14 +122,14 @@ class SVGStrokeSystem {
                 }, 800); // Brief pause before erasing
             }
         } else {
-            // If erasing, advance erase progress by 15%
-            this.totalProgress = Math.max(this.totalProgress - 15, 0);
+            // If erasing, advance erase progress by 3%
+            this.totalProgress = Math.max(this.totalProgress - 3, 0);
             console.log(`SVG erase progress: ${100 - this.totalProgress}%`);
             
             // If fully erased, reset and start drawing again
             if (this.totalProgress <= 0) {
                 this.isErasing = false;
-                this.totalProgress = 15; // Start with first increment
+                this.totalProgress = 5; // Start with first increment
             }
         }
         
@@ -167,7 +167,7 @@ class SVGStrokeSystem {
     startErasing() {
         console.log('Starting erase animation');
         this.isErasing = true;
-        this.totalProgress = 85; // Start erasing from nearly complete (100% - 15%)
+        this.totalProgress = 97; // Start erasing from nearly complete (100% - 3%)
         this.updatePathProgress();
     }
     
@@ -1335,4 +1335,67 @@ async function skipToOptions() {
         ease: "power2.out"
     }, 0.2);
 }
+
+// GSAP Animated Gradient Background
+class GradientBackground {
+    constructor() {
+        this.initializeGradientAnimation();
+    }
+    
+    initializeGradientAnimation() {
+        // Define gradient states
+        const gradientState1 = "linear-gradient(217deg, rgba(255,100,150,.7), rgba(255,100,150,0) 70.71%), linear-gradient(127deg, rgba(100,200,255,.8), rgba(100,200,255,0) 70.71%), linear-gradient(336deg, rgba(255,200,100,.6), rgba(255,200,100,0) 70.71%)";
+        
+        const gradientState2 = "linear-gradient(45deg, rgba(150,100,255,.8), rgba(150,100,255,0) 70.71%), linear-gradient(200deg, rgba(100,255,150,.7), rgba(100,255,150,.1) 70.71%), linear-gradient(320deg, rgba(255,150,200,.9), rgba(255,150,200,0.2) 70.71%)";
+        
+        const gradientState3 = "linear-gradient(120deg, rgba(255,200,100,.6), rgba(255,200,100,0) 70.71%), linear-gradient(300deg, rgba(100,150,255,.8), rgba(100,150,255,0) 70.71%), linear-gradient(60deg, rgba(200,255,150,.7), rgba(200,255,150,0) 70.71%)";
+        
+        const gradientState4 = "linear-gradient(180deg, rgba(200,100,255,.7), rgba(200,100,255,0) 70.71%), linear-gradient(80deg, rgba(255,180,100,.6), rgba(255,180,100,0) 70.71%), linear-gradient(270deg, rgba(100,255,200,.8), rgba(100,255,200,0) 70.71%)";
+        
+        // Create the animation timeline
+        const gradientTimeline = gsap.timeline({
+            repeat: -1,
+            yoyo: false,
+            ease: "none"
+        });
+        
+        // Chain the gradient animations
+        gradientTimeline
+            .set("#gradient-background", { background: gradientState1 })
+            .to("#gradient-background", { 
+                duration: 16, 
+                background: gradientState2,
+                ease: "power2.inOut"
+            })
+            .to("#gradient-background", { 
+                duration: 16, 
+                background: gradientState3,
+                ease: "power2.inOut"
+            })
+            .to("#gradient-background", { 
+                duration: 16, 
+                background: gradientState4,
+                ease: "power2.inOut"
+            })
+            .to("#gradient-background", { 
+                duration: 16, 
+                background: gradientState1,
+                ease: "power2.inOut"
+            });
+        
+        // Add subtle opacity pulsing
+        gsap.to("#gradient-background", {
+            opacity: 0.6,
+            duration: 8,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut"
+        });
+    }
+}
+
+// Initialize the gradient background animation
+document.addEventListener('DOMContentLoaded', () => {
+    new GradientBackground();
+});
 

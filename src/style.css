@@ -1,3 +1,15 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
 :root {
   font-family: 'Poltawski Nowy', serif;
   line-height: 1.5;
@@ -24,9 +36,114 @@ a:hover {
 
 body {
   margin: 0;
+  padding: 0;
   min-width: 320px;
+  width: 100vw;
   height: 100vh;
+  min-height: 100vh;
   background: #4a90a4;
+  position: relative;
+  overflow: hidden;
+}
+
+/* GSAP animated gradient background */
+.gradient-background {
+  position: fixed;
+  top: -10px;
+  left: -10px;
+  width: calc(100vw + 20px);
+  height: calc(100vh + 20px);
+  min-width: calc(100% + 20px);
+  min-height: calc(100% + 20px);
+  background: 
+    linear-gradient(217deg, rgba(255,100,150,.7), rgba(255,100,150,0) 70.71%),
+    linear-gradient(127deg, rgba(100,200,255,.8), rgba(100,200,255,0) 70.71%),
+    linear-gradient(336deg, rgba(255,200,100,.6), rgba(255,200,100,0) 70.71%);
+  background-size: 110% 110%;
+  background-position: -5% -5%;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  z-index: 0;
+  opacity: 0.8;
+  pointer-events: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Perlin-like smooth noise texture */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(ellipse 2px 3px at 20% 30%, rgba(255,255,255,.08) 0%, transparent 70%),
+    radial-gradient(ellipse 3px 2px at 80% 70%, rgba(255,255,255,.06) 0%, transparent 70%),
+    radial-gradient(ellipse 1.5px 2.5px at 40% 80%, rgba(255,255,255,.07) 0%, transparent 70%),
+    radial-gradient(ellipse 2.5px 1.5px at 90% 20%, rgba(255,255,255,.05) 0%, transparent 70%),
+    radial-gradient(ellipse 2px 2px at 10% 90%, rgba(255,255,255,.06) 0%, transparent 70%),
+    radial-gradient(ellipse 1px 1.5px at 60% 40%, rgba(255,255,255,.04) 0%, transparent 70%),
+    radial-gradient(ellipse 3px 1px at 25% 60%, rgba(255,255,255,.05) 0%, transparent 70%),
+    radial-gradient(ellipse 1.5px 3px at 75% 35%, rgba(255,255,255,.04) 0%, transparent 70%);
+  background-size: 
+    45px 45px, 
+    38px 38px, 
+    52px 52px, 
+    41px 41px, 
+    47px 47px, 
+    35px 35px, 
+    49px 49px, 
+    43px 43px;
+  animation: perlinNoiseMove 24s ease-in-out infinite, noisePulse 16s ease-in-out infinite alternate;
+  z-index: 1;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+/* Removed CSS animations - now using GSAP */
+
+@keyframes perlinNoiseMove {
+  0%, 100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  12.5% {
+    transform: translate(-1.5%, 2%) scale(1.008) rotate(0.3deg);
+  }
+  25% {
+    transform: translate(2%, -1.8%) scale(0.995) rotate(-0.2deg);
+  }
+  37.5% {
+    transform: translate(-2.2%, -1%) scale(1.012) rotate(0.4deg);
+  }
+  50% {
+    transform: translate(1.8%, 2.5%) scale(0.988) rotate(-0.1deg);
+  }
+  62.5% {
+    transform: translate(-1%, 2.8%) scale(1.005) rotate(0.25deg);
+  }
+  75% {
+    transform: translate(2.5%, -2.2%) scale(0.992) rotate(-0.3deg);
+  }
+  87.5% {
+    transform: translate(-2.8%, 1.2%) scale(1.015) rotate(0.15deg);
+  }
+}
+
+@keyframes noisePulse {
+  0% {
+    opacity: 0.08;
+    filter: brightness(0.9) contrast(1.1);
+  }
+  50% {
+    opacity: 0.16;
+    filter: brightness(1.1) contrast(0.95);
+  }
+  100% {
+    opacity: 0.08;
+    filter: brightness(0.9) contrast(1.1);
+  }
 }
 
 /* SVG Stroke Animation Background */
@@ -37,7 +154,7 @@ body {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  z-index: 1; /* Behind everything but above body background */
+  z-index: 2; /* Above gradient background but behind content */
   opacity: 0.4; /* Subtle presence */
   transition: opacity 0.5s ease;
   display: flex;
@@ -97,6 +214,8 @@ h1 {
   align-items: center;
   justify-content: center;
   min-height: 80vh;
+  position: relative;
+  z-index: 10; /* Above all backgrounds */
 }
 
 .intro_text_container {
@@ -475,6 +594,7 @@ button:focus-visible {
   max-width: none;
   margin: 0;
   position: relative;
+  z-index: 10; /* Above all backgrounds */
   overflow-y: auto; /* Allow scrolling for multiple poems */
   box-sizing: border-box;
 }
